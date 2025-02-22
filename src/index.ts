@@ -1,7 +1,7 @@
 const API_BASE_URL = `https://api.vagon.io`;
 import crypto from 'crypto';
 
-export default class VagonStreamsAPI {
+export class VagonStreamsAPI {
 
     config: Configuration;
 
@@ -161,6 +161,8 @@ export default class VagonStreamsAPI {
     }
 
 }
+
+export default VagonStreamsAPI;
 
 export enum Request_method {
     GET = 'GET',

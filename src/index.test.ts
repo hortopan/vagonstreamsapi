@@ -1,4 +1,4 @@
-import VagonStreamsAPI, { ConfigurationError, HTTP_Error, ApplicationListResponse } from "./index";
+import VagonStreamsAPI, { ConfigurationError, HTTP_Error } from "./index";
 
 test("Fail if not configured", () => {
     expect(() => new VagonStreamsAPI(undefined as any)).toThrow(ConfigurationError);
