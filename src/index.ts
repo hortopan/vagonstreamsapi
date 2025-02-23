@@ -121,12 +121,14 @@ export class VagonStreamsAPI {
         return this.request(Request_method.GET, `/app-stream-management/v2/streams/${stream_id}/machines`);
     }
 
-    public async machine_start(stream_id: string): Promise<SteamMachineStatusChangeResponse> {
-        return this.request(Request_method.POST, `/app-stream-management/v2/streams/${stream_id}/start-machine`);
+    public async machine_start(stream_id: string, region: Region): Promise<SteamMachineStatusChangeResponse> {
+        return this.request(Request_method.POST, `/app-stream-management/v2/streams/${stream_id}/start-machine`, {
+            region
+        });
     }
 
-    public async machine_stop(stream_id: string, machine_id: string): Promise<CoreApiResponse> {
-        return this.request(Request_method.POST, `/app-stream-management/v2/streams/${stream_id}/stop-machine`, {
+    public async machine_stop(machine_id: string): Promise<CoreApiResponse> {
+        return this.request(Request_method.POST, `/app-stream-management/v2/streams/stop-machine`, {
             machine_id
         });
     }
@@ -138,12 +140,20 @@ export class VagonStreamsAPI {
         })
     }
 
-    public async stream_machine_get(machine_id: string): Promise<MachineGetResponse> {
-        return this.request(Request_method.GET, `/app-stream-management/v2/machines/${machine_id}`)
+    public async machine_get(machine_uid: string): Promise<MachineGetResponse> {
+        return this.request(Request_method.GET, `/app-stream-management/v2/machines/${machine_uid}`)
     }
 
-    public async stream_machine_stats(page = 1, per_page = 20, query?: MachineStatsQuery): Promise<MachineStatsResponse> {
-        return this.request(Request_method.GET, `/app-stream-management/v2/machines`, query)
+    public async machine_stats(query?: MachineStatsQuery): Promise<MachineStatsResponse> {
+        if (!query) {
+            query = {};
+        }
+
+        return this.request(Request_method.GET, `/app-stream-management/v2/machines`, {
+            per_page: 20,
+            page: 1,
+            ...query
+        })
     }
 
     public async user_create(email: string): Promise<UserCreateApiResponse> {
@@ -156,8 +166,17 @@ export class VagonStreamsAPI {
         return this.request(Request_method.DELETE, `/app-stream-management/v2/users/${user_id}`)
     }
 
-    public async visitor_session_stats(page = 1, per_page = 20, query?: MachineStatsQuery): Promise<any> {
-        return this.request(Request_method.GET, `/app-stream-management/v2/sessions`, query)
+    public async visitor_session_stats(query?: MachineStatsQuery): Promise<any> {
+
+        if (!query) {
+            query = {};
+        }
+
+        return this.request(Request_method.GET, `/app-stream-management/v2/sessions`, {
+            per_page: 20,
+            page: 1,
+            ...query
+        })
     }
 
 }
@@ -260,9 +279,17 @@ export enum Region {
     hong_kong = 'hong_kong',
 }
 
+export interface CompiledCapacity extends Capacity {
+    assignable_machine_count: number;
+    machine_type_id: number;
+    used_capacity: number;
+}
+
 export interface Capacity {
     region: Region;
+    reserve_capacity: number;
     total_capacity: number;
+    capacity_type: CapacityType;
 }
 
 export enum GameEngine {
@@ -340,6 +367,8 @@ export interface Application {
 export interface StreamConfigResponseAttributes extends StreamConfig {
     texts: { [index: string]: string };
     application: Application
+    capacities: Array<Capacity>;
+    status: string;
 }
 
 export interface StreamConfigResponse extends CoreApiResponse {
@@ -362,8 +391,25 @@ export interface ApplicationListResponse extends CoreApiResponse {
     page: number;
 }
 
+export interface StreamListResponseAttributes {
+    texts: { [index: string]: string };
+    application: Application
+    capacities: Array<{
+        id: string;
+        type: string;
+        attributes: CompiledCapacity;
+    }>;
+    status: string;
+}
+
+export interface StreamListResponseItem {
+    id: string;
+    type: string;
+    attributes: StreamListResponseAttributes;
+}
+
 export interface StreamListResponse extends CoreApiResponse {
-    streams: Array<any>;
+    streams: Array<StreamListResponseItem>;
     count: number;
     page: number;
 }
@@ -433,6 +479,7 @@ export interface MachineAssignResponse extends CoreApiResponse {
 }
 
 export interface UserCreateApiResponse extends CoreApiResponse {
+    id: string;
     type: string;
     attributes: {
         email: string;
@@ -440,6 +487,8 @@ export interface UserCreateApiResponse extends CoreApiResponse {
 }
 
 export interface MachineStatsQuery {
+    per_page?: number;
+    page?: number;
     start_at?: string;
     end_at?: string;
     application_id?: string;
@@ -453,7 +502,9 @@ export interface MachineStatsResponse extends CoreApiResponse {
 }
 
 export interface MachineGetResponse extends CoreApiResponse {
-    machine: Machine;
+    id: string;
+    type: string;
+    attributes: MachineAttributes,
 }
 
 export enum KeyMappingSelection {
